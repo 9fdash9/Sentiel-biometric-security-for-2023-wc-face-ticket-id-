@@ -1,0 +1,454 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { Shield, Camera, CheckCircle, Ticket, ShieldCheck, Info, RefreshCw, Lock, Mail } from 'lucide-react';
+
+// --- Firebase Configuration ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'wc2030-biometric-ticketing';
+
+// Sentinel Logo Component (SVG Recreated from user image)
+const SentinelLogo = ({ className }) => (
+  <svg viewBox="0 0 400 500" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M200 20L40 70V220C40 330 110 430 200 480C290 430 360 330 360 220V70L200 20Z" fill="#0F172A" stroke="#1E293B" strokeWidth="8"/>
+    <path d="M200 60V440M200 60C140 60 90 120 90 200C90 280 140 340 200 340" stroke="#3B82F6" strokeWidth="4" strokeLinecap="round"/>
+    <path d="M200 120H230M200 160H250M200 200H260M200 240H250M200 280H230" stroke="#3B82F6" strokeWidth="4" strokeLinecap="round"/>
+    <circle cx="235" cy="120" r="4" fill="#3B82F6"/>
+    <circle cx="255" cy="160" r="4" fill="#3B82F6"/>
+    <circle cx="265" cy="200" r="4" fill="#3B82F6"/>
+    <circle cx="255" cy="240" r="4" fill="#3B82F6"/>
+    <circle cx="235" cy="280" r="4" fill="#3B82F6"/>
+    <path d="M265 200L300 160M300 160V120M255 240L290 280M290 280V320" stroke="#3B82F6" strokeWidth="2"/>
+  </svg>
+);
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [scanStatus, setScanStatus] = useState('idle'); // idle, positioning, tracking, scanning, complete
+  const [scanProgress, setScanProgress] = useState(0);
+  const [instruction, setInstruction] = useState('Align your face in the circle');
+  
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    passportNumber: '',
+    match: 'Final - Casablanca (Grand Stade)'
+  });
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const scanTimerRef = useRef(null);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  // Automated Scanning Logic
+  useEffect(() => {
+    if (step === 2 && !capturedImage) {
+      startCamera();
+      
+      // Simulate automated guidance
+      const phases = [
+        { progress: 0, text: 'Align your face in the center...', delay: 1500 },
+        { progress: 25, text: 'Keep still, detecting features...', delay: 2000 },
+        { progress: 50, text: 'Tilt slightly to the right...', delay: 1500 },
+        { progress: 75, text: 'Tilt slightly to the left...', delay: 1500 },
+        { progress: 100, text: 'Scanning complete! Processing...', delay: 1000 },
+      ];
+
+      let currentPhase = 0;
+      const runPhases = () => {
+        if (currentPhase < phases.length) {
+          setScanProgress(phases[currentPhase].progress);
+          setInstruction(phases[currentPhase].text);
+          
+          scanTimerRef.current = setTimeout(() => {
+            currentPhase++;
+            runPhases();
+          }, phases[currentPhase].delay);
+        } else {
+          autoCapture();
+        }
+      };
+
+      runPhases();
+    }
+    return () => clearTimeout(scanTimerRef.current);
+  }, [step]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      setInstruction("Camera access denied. Please enable it in settings.");
+    }
+  };
+
+  const autoCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (video && canvas) {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setCapturedImage(dataUrl);
+      setScanStatus('complete');
+      
+      const stream = video.srcObject;
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'tickets'), {
+        ...formData,
+        faceScanData: capturedImage,
+        timestamp: new Date().toISOString(),
+        ticketStatus: 'Active',
+        biometricType: 'Sentinel-3D-Scan',
+        biometricVerified: true
+      });
+      setStep(3);
+    } catch (error) {
+      console.error("Upload failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#05070a] text-white font-sans selection:bg-blue-500/30">
+      {/* Header with Sentinel Logo */}
+      <header className="border-b border-white/5 bg-black/60 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <SentinelLogo className="w-10 h-10" />
+            <div>
+              <h1 className="text-xl font-black tracking-tighter leading-none">SENTINEL</h1>
+              <p className="text-[10px] text-blue-500 font-bold tracking-[0.2em] uppercase">Biometric Security</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              <Lock className="w-3 h-3" /> Encrypted Session
+            </div>
+            <div className="h-8 w-px bg-white/10 hidden md:block"></div>
+            <div className="text-xs font-bold text-blue-400">
+              FIFA 2030 PORTAL
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        
+        {/* Step Indicators */}
+        <div className="flex items-center gap-4 mb-12 bg-white/5 p-2 rounded-2xl w-fit mx-auto border border-white/5">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center gap-3 px-4 py-2 rounded-xl transition-all">
+               <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold transition-all ${
+                 step === s ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)]' : 
+                 step > s ? 'bg-green-500/20 text-green-400' : 'bg-slate-800 text-slate-500'
+               }`}>
+                 {step > s ? <CheckCircle className="w-4 h-4" /> : s}
+               </div>
+               <span className={`text-xs font-bold uppercase tracking-widest ${step === s ? 'text-white' : 'text-slate-600'}`}>
+                 {s === 1 ? 'Identity' : s === 2 ? 'Biometrics' : 'Pass'}
+               </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Step 1: Info */}
+        {step === 1 && (
+          <div className="max-w-xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="text-center space-y-2">
+              <h2 className="text-4xl font-black tracking-tight">TICKET REGISTRATION</h2>
+              <p className="text-slate-400">Secure your digital biometric pass for the World Cup 2030.</p>
+            </div>
+
+            <div className="grid gap-6 bg-slate-900/50 p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Selected Event</label>
+                <select 
+                  className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-600 transition-all font-bold text-sm cursor-pointer hover:border-blue-500/50"
+                  value={formData.match}
+                  onChange={(e) => setFormData({...formData, match: e.target.value})}
+                >
+                  <option>Final - Casablanca (Grand Stade)</option>
+                  <option>Opening Match - Madrid (Bernabéu)</option>
+                  <option>Semi Final - Lisbon (Luz)</option>
+                </select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Full Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="NAME AS PER PASSPORT"
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-600 transition-all text-sm font-medium"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Passport ID</label>
+                  <input 
+                    type="text" 
+                    placeholder="E.G. L8493021"
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-600 transition-all text-sm font-medium"
+                    value={formData.passportNumber}
+                    onChange={(e) => setFormData({...formData, passportNumber: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="email" 
+                    placeholder="EMAIL@EXAMPLE.COM"
+                    className="w-full bg-black border border-white/10 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-blue-600 transition-all text-sm font-medium"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setStep(2)}
+                disabled={!formData.fullName || !formData.passportNumber || !formData.email}
+                className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-20 rounded-2xl font-black text-sm uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group"
+              >
+                Start Sentinel Scan
+                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Automated Face Scan */}
+        {step === 2 && (
+          <div className="space-y-10 animate-in fade-in duration-1000 text-center">
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black tracking-tighter uppercase">Biometric Acquisition</h2>
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${scanProgress >= (i+1)*20 ? 'bg-blue-500 animate-pulse' : 'bg-white/10'}`}></div>
+                  ))}
+                </div>
+                <p className={`text-sm font-mono tracking-tighter ${scanStatus === 'complete' ? 'text-green-400' : 'text-blue-400'}`}>
+                  {instruction}
+                </p>
+              </div>
+            </div>
+
+            <div className="relative mx-auto w-full max-w-md aspect-[3/4] rounded-[3rem] overflow-hidden border-2 border-white/5 bg-slate-900 group shadow-2xl">
+              {!capturedImage ? (
+                <>
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                  
+                  {/* Scanning Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[85%] h-[75%] border-2 border-dashed border-blue-500/40 rounded-[100px] relative">
+                      {/* Corner Accents */}
+                      <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl"></div>
+                      <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-2xl"></div>
+                      <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-2xl"></div>
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-2xl"></div>
+                      
+                      {/* Animated Scanning Beam */}
+                      <div 
+                        className="absolute left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.8)] z-10"
+                        style={{ top: `${scanProgress}%`, transition: 'top 0.5s linear' }}
+                      ></div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="relative h-full">
+                  <img src={capturedImage} className="w-full h-full object-cover grayscale brightness-75" />
+                  <div className="absolute inset-0 bg-blue-600/10 backdrop-overlay"></div>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="bg-green-500 p-4 rounded-full shadow-[0_0_40px_rgba(34,197,94,0.6)] animate-bounce">
+                      <CheckCircle className="w-12 h-12 text-white" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="max-w-md mx-auto space-y-4">
+              {capturedImage ? (
+                <div className="flex gap-4">
+                   <button 
+                    onClick={() => { setCapturedImage(null); setScanProgress(0); }}
+                    className="flex-1 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" /> Restart
+                  </button>
+                  <button 
+                    onClick={handleFinalSubmit}
+                    className="flex-[2] py-4 bg-white text-black hover:bg-gray-200 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-xl"
+                  >
+                    {loading ? 'Registering...' : 'Confirm Identity'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${scanProgress}%` }}></div>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase animate-pulse">Sentinel Analysis in Progress</span>
+                </div>
+              )}
+              
+              <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex items-start gap-4 text-left">
+                <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  SENTINEL technology uses 128 unique facial landmarks to verify your identity. Your data is encrypted using AES-256 and stored securely for match-day validation.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Digital Pass */}
+        {step === 3 && (
+          <div className="max-w-2xl mx-auto space-y-8 animate-in zoom-in duration-500">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest">
+                Verification Successful
+              </div>
+              <h2 className="text-4xl font-black tracking-tight">BIOPASS ACTIVATED</h2>
+            </div>
+
+            <div className="relative group perspective-1000">
+              {/* Futuristic Ticket Design */}
+              <div className="bg-gradient-to-br from-[#0a0c10] to-[#1a1e26] border border-white/10 p-1 rounded-[3rem] shadow-2xl overflow-hidden">
+                <div className="bg-black/40 rounded-[2.8rem] p-10 flex flex-col md:flex-row gap-10">
+                  
+                  {/* Left Side: Photo & Match */}
+                  <div className="flex-1 space-y-8">
+                    <div className="flex items-center gap-4">
+                       <SentinelLogo className="w-10 h-10 opacity-30" />
+                       <div className="h-px flex-1 bg-white/5"></div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Match Registration</p>
+                      <h3 className="text-xl font-black">{formData.match.split('-')[0]}</h3>
+                      <p className="text-sm text-slate-400 font-bold">{formData.match.split('-')[1]}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pass Holder</p>
+                        <p className="text-sm font-bold uppercase truncate">{formData.fullName}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gate Access</p>
+                        <p className="text-sm font-bold uppercase">Biometric Level 3</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5">
+                      <p className="text-[9px] text-slate-600 leading-tight uppercase font-bold tracking-tighter">
+                        This pass is linked to your physical biometric profile. No physical or digital QR is required for entry. Approach Gate Sensors directly.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Biometric ID Profile */}
+                  <div className="w-full md:w-56 space-y-6">
+                    <div className="aspect-square rounded-3xl overflow-hidden border-2 border-white/10 relative group">
+                      <img src={capturedImage} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-blue-600/20 mix-blend-overlay"></div>
+                      <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-md p-2 rounded-xl text-[8px] font-mono text-blue-400 border border-white/5">
+                        SECURE_SCAN_COMPLETE
+                      </div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-2">
+                       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Encrypted UID</p>
+                       <p className="text-[10px] font-mono text-slate-300 break-all leading-none">{user?.uid}</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Decorative Glows */}
+              <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-600/10 blur-[120px] -z-10"></div>
+              <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-600/10 blur-[120px] -z-10"></div>
+            </div>
+
+            <div className="flex justify-center gap-6 pt-10">
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-10 py-4 rounded-full bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest transition-all border border-white/5"
+              >
+                Register Another Pass
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="mt-20 border-t border-white/5 py-12 px-6 bg-black">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+          <div className="flex items-center gap-4 opacity-50">
+            <SentinelLogo className="w-8 h-8 grayscale" />
+            <span className="text-xs font-bold tracking-widest uppercase">Sentinel Security Systems</span>
+          </div>
+          <div className="flex gap-10 items-center opacity-30 grayscale scale-75">
+            <span className="font-black text-xl italic tracking-tighter">FIFA</span>
+            <span className="font-bold text-sm tracking-widest">FRMF</span>
+            <span className="font-bold text-sm tracking-widest">RFEF</span>
+            <span className="font-bold text-sm tracking-widest">FPF</span>
+          </div>
+          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">© 2030 World Cup Biopass Initiative</p>
+        </div>
+      </footer>
+
+      <canvas ref={canvasRef} className="hidden" />
+      
+      <style dangerouslySetInnerHTML={{ __html: `
+        .perspective-1000 { perspective: 1000px; }
+        .backdrop-overlay { background-image: radial-gradient(circle at center, transparent 30%, rgba(5,7,10,0.8) 100%); }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      `}} />
+    </div>
+  );
+}
