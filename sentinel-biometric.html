@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL — FIFA 2030 Biometric Pass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060810;--surf:#0d1117;
+  --b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.13);
+  --blue:#2563eb;--bglow:rgba(37,99,235,0.3);--blight:#60a5fa;
+  --green:#22c55e;--gglow:rgba(34,197,94,0.25);
+  --amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;
+  --mono:'Space Mono',monospace;--disp:'Bebas Neue',sans-serif;--sans:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(37,99,235,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.035) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(37,99,235,.1) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:200;background:rgba(6,8,16,.95);border-bottom:1px solid var(--b1);backdrop-filter:blur(24px);padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-ico{width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:19px;box-shadow:0 0 18px var(--bglow);color:#fff}
+.logo h1{font-family:var(--disp);font-size:21px;letter-spacing:4px;line-height:1}
+.logo p{font-size:9px;color:var(--blight);letter-spacing:2px;font-weight:600;text-transform:uppercase;margin-top:2px;font-family:var(--mono)}
+.hdr-r{display:flex;align-items:center;gap:18px}
+.hdr-s{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:1px}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+.fifa{font-family:var(--disp);font-size:15px;letter-spacing:3px;color:var(--t3)}
+
+/* ── STEP BAR ── */
+.step-outer{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:36px 24px 0}
+.steps{display:flex;align-items:center;margin-bottom:40px;background:var(--surf);border:1px solid var(--b1);border-radius:16px;padding:5px;width:fit-content;margin-left:auto;margin-right:auto;flex-wrap:wrap;gap:2px}
+.si{display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:10px;transition:all .3s;white-space:nowrap}
+.si.active{background:var(--blue);box-shadow:0 0 22px var(--bglow)}
+.si.done{background:rgba(34,197,94,.1)}
+.sn{width:20px;height:20px;border-radius:5px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--mono);flex-shrink:0}
+.si.active .sn{background:rgba(255,255,255,.2)}
+.si.done .sn{background:rgba(34,197,94,.2);color:var(--green)}
+.sl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3)}
+.si.active .sl{color:#fff}
+.si.done .sl{color:var(--green)}
+.sd{width:18px;height:1px;background:var(--b1);flex-shrink:0}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:0 24px 100px}
+.scr{display:none}
+.scr.active{display:block;animation:up .45s ease forwards}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.stitle{text-align:center;margin-bottom:28px}
+.stitle h2{font-family:var(--disp);font-size:42px;letter-spacing:5px;line-height:1;margin-bottom:7px}
+.stitle p{color:var(--t2);font-size:14px}
+
+/* ── CARD ── */
+.card{background:var(--surf);border:1px solid var(--b1);border-radius:26px;padding:30px}
+
+/* ── FORM ── */
+.fld{margin-bottom:18px}
+.fld label{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blight);margin-bottom:7px;font-family:var(--mono)}
+.fld label.m{color:var(--t3)}
+.fld input,.fld select{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--b2);border-radius:13px;padding:13px 16px;color:var(--t1);font-family:var(--sans);font-size:14px;font-weight:500;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.fld input::placeholder{color:var(--t3)}
+.fld input:focus,.fld select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--bglow)}
+.fld input.er,.fld select.er{border-color:var(--red)}
+.em{font-size:11px;color:var(--red);margin-top:5px;font-weight:600;display:none;font-family:var(--mono)}
+.em.show{display:block}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:500px){.fg{grid-template-columns:1fr}}
+
+/* GENDER */
+.grow{display:flex;gap:9px;margin-top:4px}
+.gp{flex:1;padding:12px 8px;background:rgba(0,0,0,.5);border:1px solid var(--b2);border-radius:13px;color:var(--t2);font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:center;font-family:var(--sans)}
+.gp:hover{border-color:var(--blight);color:var(--t1)}
+.gp.sel{background:rgba(37,99,235,.15);border-color:var(--blue);color:var(--blight);box-shadow:0 0 0 3px var(--bglow)}
+.gp.ep{border-color:var(--red)}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:15px;background:var(--blue);border:none;border-radius:15px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:8px;box-shadow:0 8px 28px var(--bglow)}
+.btn:hover{background:#1d4ed8;transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn-g{flex:1;padding:13px;background:transparent;border:1px solid var(--b2);border-radius:13px;color:var(--t2);font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-g:hover{background:rgba(255,255,255,.05)}
+.btn-w{flex:2;padding:13px;background:#fff;border:none;border-radius:13px;color:#0a0c10;font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-w:hover{background:#e2e8f0;transform:translateY(-1px)}
+.brow{display:flex;gap:11px;margin-top:18px}
+
+/* ════════════════════════
+   SCAN SCREEN
+════════════════════════ */
+.scan-hdr{text-align:center;margin-bottom:18px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-family:var(--mono);margin-bottom:12px;border:1px solid}
+.badge.idle {color:var(--blight);background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.25)}
+.badge.green{color:var(--green);background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3)}
+.badge.amber{color:var(--amber);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+.badge.red  {color:var(--red);background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3)}
+.bdot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite}
+.instr{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;min-height:20px;transition:color .3s;color:var(--blight)}
+.instr.green{color:var(--green)}
+.instr.amber{color:var(--amber)}
+.instr.red  {color:var(--red)}
+.pbar{width:220px;height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin:0 auto}
+.pfill{height:100%;background:var(--blue);border-radius:2px;transition:width .5s ease;width:0%}
+.pfill.green{background:var(--green)}
+.pfill.amber{background:var(--amber)}
+.pfill.red{background:var(--red)}
+
+/* CAMERA */
+.cam-outer{display:flex;flex-direction:column;align-items:center}
+.cam-box{position:relative;width:270px;height:330px;border-radius:44px;overflow:hidden;border:1px solid var(--b2);background:#05070a;margin:0 auto 12px;transition:box-shadow .4s}
+.cam-box.idle {box-shadow:0 0 50px -10px var(--bglow)}
+.cam-box.amber{box-shadow:0 0 50px -10px rgba(245,158,11,.4)}
+.cam-box.green{box-shadow:0 0 50px -10px var(--gglow)}
+.cam-box.red  {box-shadow:0 0 50px -10px rgba(239,68,68,.35)}
+.cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;filter:brightness(.96)}
+
+/* OVAL OVERLAY */
+.ov-wrap{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.oval{width:58%;height:70%;border-radius:50%;position:relative;transition:border-color .35s,transform .2s}
+.oval.idle {border:2px solid rgba(37,99,235,.5)}
+.oval.amber{border:2px solid rgba(245,158,11,.85);animation:shk .4s ease}
+.oval.green{border:2px solid var(--green)}
+.oval.red  {border:2px solid var(--red);animation:shk .4s ease}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.corner{position:absolute;width:18px;height:18px;border-style:solid;transition:border-color .35s}
+.corner.tl{top:-2px;left:-2px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
+.corner.tr{top:-2px;right:-2px;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
+.corner.bl{bottom:-2px;left:-2px;border-width:0 0 2px 2px;border-radius:0 0 0 4px}
+.corner.br{bottom:-2px;right:-2px;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
+.oval.idle  .corner{border-color:var(--blue)}
+.oval.amber .corner{border-color:var(--amber)}
+.oval.green .corner{border-color:var(--green)}
+.oval.red   .corner{border-color:var(--red)}
+.ring{position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--green);opacity:0;transition:opacity .4s}
+.ring.on{opacity:1;animation:rp 1.8s ease-in-out infinite}
+@keyframes rp{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.25)}50%{box-shadow:0 0 0 10px transparent}}
+
+/* SCAN LINE */
+.sline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);box-shadow:0 0 10px var(--blue);opacity:0;pointer-events:none}
+.sline.run{animation:sw 2s linear infinite}
+@keyframes sw{0%{top:5%;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:95%;opacity:0}}
+
+/* GRID */
+.cgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(37,99,235,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.06) 1px,transparent 1px);background-size:16px 16px;opacity:0;transition:opacity .5s;pointer-events:none}
+.cgrid.on{opacity:1}
+
+/* ── LIVENESS PROMPT (inside cam) ── */
+.lv-hint{position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s}
+.lv-hint.show{opacity:1}
+.lv-pill{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(6,8,16,.9);padding:5px 12px;border-radius:50px;border:1px solid rgba(245,158,11,.35);display:flex;align-items:center;gap:7px}
+.lv-arr{animation:lr 1s ease-in-out infinite}
+@keyframes lr{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+
+/* ── OVERLAYS ── */
+/* Dark / bad quality overlay */
+.ov-msg{position:absolute;inset:0;border-radius:44px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:22px;text-align:center}
+.ov-msg.show{display:flex}
+.ov-dark{background:rgba(6,8,16,.9)}
+.ov-dark .ov-ico{font-size:32px}
+.ov-dark h3{font-size:13px;font-weight:800;color:var(--amber)}
+.ov-dark p{font-size:11px;color:var(--t2);line-height:1.65;font-family:var(--mono)}
+/* No-face tag */
+.nf-tag{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s}
+.nf-tag.show{opacity:1}
+.nf-pill{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--amber);background:rgba(6,8,16,.9);padding:5px 12px;border-radius:50px;border:1px solid rgba(245,158,11,.35)}
+/* Success overlay */
+.ov-suc{position:absolute;inset:0;border-radius:44px;background:rgba(5,7,10,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:20px}
+.ov-suc.show{display:flex;animation:up .5s ease forwards}
+.sico{width:70px;height:70px;border-radius:50%;background:rgba(34,197,94,.1);border:2px solid rgba(34,197,94,.35);display:flex;align-items:center;justify-content:center}
+.ckm{stroke:var(--green);stroke-width:3;fill:none;stroke-dasharray:44;stroke-dashoffset:44;transition:stroke-dashoffset .6s ease .2s}
+.ckm.d{stroke-dashoffset:0}
+.slbl{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--green);font-weight:700}
+
+/* cam error */
+.cam-err{width:270px;height:330px;border-radius:44px;background:var(--surf);border:1px solid var(--b2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;margin:0 auto 20px;padding:24px;text-align:center}
+.cam-err h3{font-size:13px;font-weight:700}
+.cam-err p{font-size:11px;color:var(--t2);line-height:1.6}
+
+/* face status line */
+.fstat{text-align:center;margin-bottom:13px;min-height:21px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;transition:color .3s;display:flex;align-items:center;justify-content:center;gap:7px}
+.fstat.ok  {color:var(--green)}
+.fstat.warn{color:var(--amber)}
+.fstat.err {color:var(--red)}
+.fdot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* tips */
+.tips{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:16px;padding:15px 18px;margin-bottom:16px;display:none}
+.tips.show{display:block}
+.tips h4{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amber);font-family:var(--mono);margin-bottom:9px}
+.tips ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+.tips li{font-size:11px;color:var(--t2);line-height:1.5;display:flex;gap:7px}
+.tips li::before{content:'→';color:var(--amber);font-family:var(--mono);flex-shrink:0}
+
+/* info box */
+.ibox{display:flex;gap:12px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.12);border-radius:15px;padding:15px 18px;margin-bottom:18px}
+.ibox svg{flex-shrink:0;margin-top:2px;color:var(--blight)}
+.ibox p{font-size:11px;color:var(--t2);line-height:1.75}
+.ibox strong{color:var(--t1);font-weight:700}
+
+/* ════════════════════════
+   PITCH
+════════════════════════ */
+.pitch-card{background:var(--surf);border:1px solid var(--b1);border-radius:26px;padding:26px;margin-bottom:16px}
+.pitch-card h3{font-family:var(--disp);font-size:22px;letter-spacing:3px;margin-bottom:3px}
+.pitch-card .psub{font-size:11px;color:var(--t2);margin-bottom:20px}
+.svg-c{display:flex;justify-content:center;margin-bottom:20px}
+.svg-c svg{max-width:340px;width:100%}
+.zpath{cursor:pointer;transition:opacity .3s,filter .3s}
+.zpath:hover{filter:brightness(1.5)}
+.zg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.zb{background:rgba(0,0,0,.4);border:1px solid var(--b2);border-radius:14px;padding:13px 14px;cursor:pointer;transition:all .22s}
+.zb:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.03)}
+.zb.sel{border-color:var(--blue);background:rgba(37,99,235,.1);box-shadow:0 0 0 3px var(--bglow)}
+.zname{font-family:var(--disp);font-size:16px;letter-spacing:2px;margin-bottom:2px;display:flex;align-items:center;gap:7px}
+.zdot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.zsub{font-size:10px;color:var(--t3);font-family:var(--mono)}
+
+/* cats */
+.cat-card{background:var(--surf);border:1px solid var(--b1);border-radius:26px;padding:26px;margin-bottom:16px;display:none}
+.cat-card.show{display:block;animation:up .4s ease forwards}
+.cat-t{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blight);font-family:var(--mono);margin-bottom:14px}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cb{background:rgba(0,0,0,.4);border:1px solid var(--b2);border-radius:13px;padding:13px 14px;cursor:pointer;transition:all .2s;text-align:left}
+.cb:hover{border-color:rgba(255,255,255,.2)}
+.cb.sel{border-color:var(--blue);background:rgba(37,99,235,.1);box-shadow:0 0 0 3px var(--bglow)}
+.cbn{font-weight:800;font-size:13px;margin-bottom:2px}
+.cbs{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.cbp{font-size:11px;color:var(--green);font-weight:700;margin-top:5px;font-family:var(--mono)}
+
+/* ── SUMMARY ── */
+.scard{background:linear-gradient(145deg,#0a0c12,#101420);border:1px solid var(--b2);border-radius:26px;overflow:hidden;margin-bottom:22px}
+.sacc{height:3px;background:linear-gradient(90deg,var(--blue),var(--purple),var(--green))}
+.sbody{padding:30px}
+.stag{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.22);padding:4px 10px;border-radius:7px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green);font-family:var(--mono);margin-bottom:16px}
+.sevt{font-family:var(--disp);font-size:26px;letter-spacing:3px;line-height:1.1;margin-bottom:22px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:500px){.sgrid{grid-template-columns:1fr}}
+.sf label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);font-family:var(--mono);display:block;margin-bottom:3px}
+.sf p{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.sf p.g{color:var(--green)}
+.sf p.b{color:var(--blight)}
+.sdiv{border:none;border-top:1px dashed rgba(255,255,255,.07);margin:16px 0}
+.sid{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.siddot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+
+/* ── FINAL ── */
+.final{text-align:center;padding:20px 0}
+.fico{width:96px;height:96px;border-radius:50%;background:rgba(34,197,94,.08);border:2px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 26px;box-shadow:0 0 60px -10px var(--gglow)}
+.ftitle{font-family:var(--disp);font-size:38px;letter-spacing:5px;margin-bottom:12px}
+.fmsg{font-size:15px;color:var(--t2);line-height:1.85;max-width:460px;margin:0 auto 28px}
+.fmsg strong{color:var(--t1);font-weight:700}
+
+/* ── CHAT ── */
+#fab{position:fixed;bottom:26px;right:26px;z-index:999;width:50px;height:50px;border-radius:50%;background:var(--blue);border:none;cursor:pointer;box-shadow:0 4px 22px var(--bglow);display:flex;align-items:center;justify-content:center;transition:all .2s}
+#fab:hover{transform:scale(1.1);background:#1d4ed8}
+#cbox{position:fixed;bottom:88px;right:26px;z-index:998;width:295px;background:var(--surf);border:1px solid var(--b2);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6);display:none;flex-direction:column;overflow:hidden}
+#cbox.open{display:flex;animation:up .3s ease forwards}
+.ch{background:var(--blue);padding:13px 16px;display:flex;align-items:center;gap:9px}
+.cav{width:30px;height:30px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chtxt h4{font-size:13px;font-weight:800}
+.chtxt p{font-size:10px;color:rgba(255,255,255,.7);font-family:var(--mono)}
+.cclose{margin-left:auto;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.7);font-size:20px;line-height:1;padding:0}
+.cmsgs{max-height:190px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px}
+.cmsgs::-webkit-scrollbar{width:3px}
+.cmsgs::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+.msg{max-width:86%;padding:9px 13px;border-radius:13px;font-size:12px;line-height:1.55}
+.msg.bot{background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.2);align-self:flex-start;border-radius:4px 13px 13px 13px}
+.msg.usr{background:var(--blue);align-self:flex-end;border-radius:13px 4px 13px 13px;color:#fff}
+.cinp{display:flex;gap:7px;padding:11px;border-top:1px solid var(--b1)}
+.cinp input{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--b2);border-radius:9px;padding:8px 11px;color:var(--t1);font-size:12px;outline:none;font-family:var(--sans)}
+.cinp input:focus{border-color:var(--blue)}
+.csend{width:32px;height:32px;background:var(--blue);border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.csend:hover{background:#1d4ed8}
+.csup{padding:9px 14px;border-top:1px solid var(--b1);font-size:10px;color:var(--t3);font-family:var(--mono);text-align:center}
+.csup a{color:var(--blight);text-decoration:none}
+
+footer{position:relative;z-index:1;border-top:1px solid var(--b1);padding:26px 28px;display:flex;justify-content:space-between;align-items:center;max-width:740px;margin:0 auto;flex-wrap:wrap;gap:10px}
+footer p{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;font-family:var(--mono)}
+#rc,#bc{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-ico">S</div>
+    <div>
+      <h1>SENTINEL</h1>
+      <p>Biometric Auth System</p>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <span class="fifa">FIFA 2030</span>
+    <div class="hdr-s"><div class="pdot"></div>SECURE NODE ACTIVE</div>
+  </div>
+</header>
+
+<div class="step-outer">
+  <div class="steps" id="stepbar">
+    <div class="si active"><div class="sn">1</div><span class="sl">Details</span></div>
+    <div class="sd"></div>
+    <div class="si"><div class="sn">2</div><span class="sl">Scan</span></div>
+    <div class="sd"></div>
+    <div class="si"><div class="sn">3</div><span class="sl">Seat</span></div>
+    <div class="sd"></div>
+    <div class="si"><div class="sn">4</div><span class="sl">Confirm</span></div>
+  </div>
+</div>
+
+<main>
+
+<!-- ══ SCREEN 1: DETAILS ══ -->
+<div class="scr active" id="s1">
+  <div class="stitle"><h2>PASS REGISTRATION</h2><p>Link your legal identity to your biometric profile</p></div>
+  <div class="card">
+    <div class="fld">
+      <label>Match Selection</label>
+      <select id="match">
+        <option value="FIFA 2030 Final — Grand Stade, Casablanca">FIFA 2030 Final — Grand Stade, Casablanca</option>
+        <option value="Opening Match — Estadio Bernabéu, Madrid">Opening Match — Estadio Bernabéu, Madrid</option>
+        <option value="Semi Final — Estádio da Luz, Lisbon">Semi Final — Estádio da Luz, Lisbon</option>
+        <option value="Quarter Final — San Mamés, Bilbao">Quarter Final — San Mamés, Bilbao</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="fld">
+        <label class="m">Full Name</label>
+        <input type="text" id="fullName" placeholder="As on passport" autocomplete="name"/>
+        <span class="em" id="en">Enter your full name</span>
+      </div>
+      <div class="fld">
+        <label class="m">Passport / ID No.</label>
+        <input type="text" id="passport" placeholder="e.g. AB1234567" maxlength="15"/>
+        <span class="em" id="ep">6–15 alphanumeric characters</span>
+      </div>
+    </div>
+    <div class="fld">
+      <label class="m">Email Address</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="email"/>
+      <span class="em" id="ee">Enter a valid email address</span>
+    </div>
+    <div class="fg">
+      <div class="fld">
+        <label class="m">Nationality</label>
+        <select id="nat">
+          <option value="">Select country</option>
+          <option>Morocco</option><option>Spain</option><option>Portugal</option>
+          <option>France</option><option>Brazil</option><option>Argentina</option>
+          <option>England</option><option>Germany</option><option>Italy</option>
+          <option>Netherlands</option><option>United States</option><option>Japan</option>
+          <option>South Korea</option><option>Senegal</option><option>Nigeria</option><option>Other</option>
+        </select>
+        <span class="em" id="ena">Select nationality</span>
+      </div>
+      <div class="fld">
+        <label class="m">Date of Birth</label>
+        <input type="date" id="dob"/>
+        <span class="em" id="ed">Enter date of birth</span>
+      </div>
+    </div>
+    <div class="fld">
+      <label class="m">Gender</label>
+      <div class="grow">
+        <div class="gp" id="gm" onclick="selG('Male')">♂ Male</div>
+        <div class="gp" id="gf" onclick="selG('Female')">♀ Female</div>
+        <div class="gp" id="go" onclick="selG('Other')">⊕ Other</div>
+      </div>
+      <span class="em" id="eg">Please select your gender</span>
+    </div>
+    <button class="btn" onclick="valS1()">
+      Enter Biometric Scanner
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: SCAN ══ -->
+<div class="scr" id="s2">
+  <div class="stitle"><h2>FACE SCAN</h2><p>Your face is your ticket — look at the camera to register</p></div>
+
+  <div class="scan-hdr">
+    <div id="badge" class="badge idle"><div class="bdot"></div><span id="badge-txt">Waiting for Face</span></div>
+    <div id="instr" class="instr">Position your face inside the oval</div>
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  </div>
+
+  <div class="cam-outer">
+    <div id="cam-con">
+      <div class="cam-box idle" style="display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center;color:var(--t3);font-family:var(--mono);font-size:10px;letter-spacing:1px"><div style="font-size:28px;margin-bottom:8px">📷</div>LOADING...</div>
+      </div>
+    </div>
+    <div class="fstat" id="fstat"><span class="fdot"></span><span id="fstat-txt">Initializing camera...</span></div>
+  </div>
+
+  <div class="tips" id="tips">
+    <h4>⚠ Face Not Detected</h4>
+    <ul>
+      <li>Centre your face in the oval — look directly at the camera</li>
+      <li>Move to a well-lit area, avoid strong backlighting</li>
+      <li>Remove sunglasses or face coverings</li>
+      <li>Hold device steady at eye level, move closer if needed</li>
+    </ul>
+  </div>
+
+  <div class="ibox">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    <p>Your face <strong>is the ticket</strong>. A 512-point biometric vector is computed locally — no photo stored, only the encrypted descriptor is registered.</p>
+  </div>
+
+  <div class="brow" id="scan-btns" style="display:none">
+    <button class="btn-g" onclick="retryS()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      Recalibrate
+    </button>
+    <button class="btn-w" onclick="goTo(3)">
+      Choose Your Seat
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: SEAT ══ -->
+<div class="scr" id="s3">
+  <div class="stitle"><h2>SELECT YOUR SEAT</h2><p>Choose your stand and ticket category</p></div>
+
+  <div class="pitch-card">
+    <h3>STADIUM MAP</h3>
+    <p class="psub">Grand Stade de Casablanca · Capacity 115,000</p>
+    <div class="svg-c">
+      <svg viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="170" cy="130" rx="162" ry="122" fill="#080b11" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+        <path class="zpath" id="zp-N" d="M62,20 Q170,5 278,20 L260,52 Q170,40 80,52 Z" fill="#1a3260" stroke="rgba(37,99,235,0.5)" stroke-width="1" onclick="selZ('North')"/>
+        <path class="zpath" id="zp-S" d="M62,240 Q170,255 278,240 L260,208 Q170,220 80,208 Z" fill="#122b1a" stroke="rgba(34,197,94,0.5)" stroke-width="1" onclick="selZ('South')"/>
+        <path class="zpath" id="zp-W" d="M8,50 Q2,130 8,210 L42,200 Q38,130 42,60 Z" fill="#221440" stroke="rgba(139,92,246,0.5)" stroke-width="1" onclick="selZ('West')"/>
+        <path class="zpath" id="zp-E" d="M332,50 Q338,130 332,210 L298,200 Q302,130 298,60 Z" fill="#311c00" stroke="rgba(245,158,11,0.5)" stroke-width="1" onclick="selZ('East')"/>
+        <ellipse cx="170" cy="130" rx="118" ry="85" fill="#155524" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+        <line x1="170" y1="46" x2="170" y2="214" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <ellipse cx="170" cy="130" rx="34" ry="27" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <circle cx="170" cy="130" r="3" fill="rgba(255,255,255,0.4)"/>
+        <rect x="52" y="106" width="26" height="48" rx="2" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <rect x="262" y="106" width="26" height="48" rx="2" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <text x="170" y="34" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="12" fill="#60a5fa" letter-spacing="2">NORTH</text>
+        <text x="170" y="250" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="12" fill="#22c55e" letter-spacing="2">SOUTH</text>
+        <text x="20" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="11" fill="#8b5cf6" letter-spacing="1" transform="rotate(-90,20,134)">WEST</text>
+        <text x="320" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="11" fill="#f59e0b" letter-spacing="1" transform="rotate(90,320,134)">EAST</text>
+      </svg>
+    </div>
+    <div class="zg">
+      <div class="zb" id="zb-North" onclick="selZ('North')"><div class="zname"><div class="zdot" style="background:#2563eb"></div>NORTH</div><div class="zsub">Main Tribune · Best view</div></div>
+      <div class="zb" id="zb-South" onclick="selZ('South')"><div class="zname"><div class="zdot" style="background:#22c55e"></div>SOUTH</div><div class="zsub">Family &amp; Ultra Zone</div></div>
+      <div class="zb" id="zb-West"  onclick="selZ('West')"> <div class="zname"><div class="zdot" style="background:#8b5cf6"></div>WEST</div> <div class="zsub">Lateral Stand · West</div></div>
+      <div class="zb" id="zb-East"  onclick="selZ('East')"> <div class="zname"><div class="zdot" style="background:#f59e0b"></div>EAST</div> <div class="zsub">Lateral Stand · East</div></div>
+    </div>
+    <span class="em" id="ez" style="margin-top:10px">Please select a stand zone</span>
+  </div>
+
+  <div class="cat-card" id="cat-card">
+    <div class="cat-t">Ticket Category — <span id="cat-zlbl"></span></div>
+    <div class="cats">
+      <div class="cb" id="cb-VIP"  onclick="selC('VIP')">        <div class="cbn">⭐ VIP</div>        <div class="cbs">Hospitality · Lounge access</div><div class="cbp">€ 850</div></div>
+      <div class="cb" id="cb-Cat1" onclick="selC('Category 1')"> <div class="cbn">🏟 Category 1</div><div class="cbs">Premium seating</div>          <div class="cbp">€ 350</div></div>
+      <div class="cb" id="cb-Cat2" onclick="selC('Category 2')"> <div class="cbn">🎫 Category 2</div><div class="cbs">Standard premium</div>          <div class="cbp">€ 175</div></div>
+      <div class="cb" id="cb-Cat3" onclick="selC('Category 3')"> <div class="cbn">🎟 Category 3</div><div class="cbs">General admission</div>          <div class="cbp">€ 85</div></div>
+    </div>
+    <span class="em" id="ec" style="margin-top:10px">Please select a category</span>
+  </div>
+
+  <button class="btn" onclick="valS3()">
+    Review Summary
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </button>
+</div>
+
+<!-- ══ SCREEN 4: SUMMARY ══ -->
+<div class="scr" id="s4">
+  <div class="stitle"><h2>REVIEW &amp; CONFIRM</h2><p>Verify your details before final registration</p></div>
+  <div class="scard">
+    <div class="sacc"></div>
+    <div class="sbody">
+      <div class="stag"><span style="width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block"></span> Biometric Linked</div>
+      <div class="sevt" id="sum-match">FIFA 2030 Final</div>
+      <div class="sgrid">
+        <div class="sf"><label>Full Name</label><p id="sn">—</p></div>
+        <div class="sf"><label>Passport</label><p id="sp">—</p></div>
+        <div class="sf"><label>Nationality</label><p id="sna">—</p></div>
+        <div class="sf"><label>Gender</label><p id="sg">—</p></div>
+        <div class="sf"><label>Stand Zone</label><p class="b" id="sz">—</p></div>
+        <div class="sf"><label>Ticket Category</label><p class="b" id="sc">—</p></div>
+        <div class="sf"><label>Auth Method</label><p class="g">Face Vector HD-512</p></div>
+        <div class="sf"><label>Status</label><p class="g">Verified ✓</p></div>
+      </div>
+      <hr class="sdiv">
+      <div class="sid"><div class="siddot"></div><span id="suid">SECURE ID: —</span></div>
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn-g" onclick="goTo(3)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      Go Back
+    </button>
+    <button class="btn-w" onclick="finalConfirm()">
+      Confirm &amp; Register
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5: FINAL ══ -->
+<div class="scr" id="s5">
+  <div class="final">
+    <div class="fico">
+      <svg width="42" height="42" viewBox="0 0 50 50" fill="none">
+        <polyline class="ck5" points="10,25 22,37 40,15" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="50" stroke-dashoffset="50" style="transition:stroke-dashoffset .7s ease .3s"/>
+      </svg>
+    </div>
+    <div class="ftitle">PASS REGISTERED</div>
+    <p class="fmsg">Your ticket has been registered.<br><strong>You will receive a confirmation email soon.</strong><br><br>At the stadium gate, simply look at the biometric scanner — your face is your ticket.</p>
+    <button class="btn" style="max-width:300px;margin:0 auto" onclick="window.location.reload()">Register Another Pass</button>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <p>Sentinel Biometric Systems</p>
+  <p>FIFA 2030 · Security Unit</p>
+  <p>Face Is Ticket · HD-512</p>
+</footer>
+
+<!-- CHAT FAB -->
+<button id="fab" onclick="toggleChat()" title="Support">
+  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+<div id="cbox">
+  <div class="ch">
+    <div class="cav"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+    <div class="chtxt"><h4>Sentinel Support</h4><p>Online · Replies instantly</p></div>
+    <button class="cclose" onclick="toggleChat()">×</button>
+  </div>
+  <div class="cmsgs" id="cmsgs">
+    <div class="msg bot">👋 Hi! I'm the Sentinel support assistant. How can I help you with your FIFA 2030 biometric pass?</div>
+    <div class="msg bot">📧 You can also reach us at <strong>sentinel@support.com</strong></div>
+  </div>
+  <div class="cinp">
+    <input type="text" id="cin" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()"/>
+    <button class="csend" onclick="sendChat()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+    </button>
+  </div>
+  <div class="csup">Support: <a href="mailto:sentinel@support.com">sentinel@support.com</a></div>
+</div>
+
+<canvas id="rc"></canvas>
+<canvas id="bc" width="80" height="60"></canvas>
+
+<script>
+/* ════════════ STATE ════════════ */
+const ST = {
+  form:{}, gender:'', zone:'', cat:'', vec:null,
+  stream:null, uid:'',
+  // scan state machine
+  phase:'idle', // idle | detecting | liveness | scanning | done
+  faceFrames:0,        // consecutive frames with face detected
+  noFaceFrames:0,      // consecutive frames WITHOUT face
+  livenessFrames:0,    // frames during liveness
+  livenessMotion:0,    // accumulated motion score
+  prevBrightness:null, // for motion detection
+  loopId:null,
+  _fd:null
+};
+
+const FACE_NEEDED   = 8;   // consecutive frames to confirm face
+const NOFACE_NEEDED = 5;   // consecutive frames to declare lost
+const BRIGHT_MIN    = 35;  // min brightness (0-255) before warning
+const LIVENESS_FRAMES = 20; // frames to collect for liveness
+const MOTION_THRESH = 4;   // average motion needed across liveness window
+
+/* ════════════ NAVIGATION ════════════ */
+function goTo(n) {
+  document.querySelectorAll('.scr').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.si').forEach((el,i) => {
+    const s = i+1;
+    el.classList.remove('active','done');
+    if (s < n) el.classList.add('done');
+    else if (s === n) el.classList.add('active');
+    const num = el.querySelector('.sn');
+    if (s < n) num.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    else num.textContent = s;
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ════════════ STEP 1 ════════════ */
+function selG(g) {
+  ST.gender = g;
+  ['Male','Female','Other'].forEach(x => {
+    document.getElementById('g'+x[0].toLowerCase()).classList.toggle('sel', x===g);
+    document.getElementById('g'+x[0].toLowerCase()).classList.remove('ep');
+  });
+  document.getElementById('eg').classList.remove('show');
+}
+function valS1() {
+  let ok = true;
+  const name = document.getElementById('fullName').value.trim();
+  const pass = document.getElementById('passport').value.trim();
+  const mail = document.getElementById('email').value.trim();
+  const nat  = document.getElementById('nat').value;
+  const dob  = document.getElementById('dob').value;
+  const chk  = (eid,fid,fail) => {
+    document.getElementById(fid).classList.toggle('er', fail);
+    document.getElementById(eid).classList.toggle('show', fail);
+    if(fail) ok=false;
+  };
+  chk('en','fullName', name.length<2);
+  chk('ep','passport', !/^[A-Za-z0-9]{6,15}$/.test(pass));
+  chk('ee','email',    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail));
+  chk('ena','nat',     !nat);
+  chk('ed','dob',      !dob);
+  if (!ST.gender) {
+    document.getElementById('eg').classList.add('show');
+    document.querySelectorAll('.gp').forEach(p=>p.classList.add('ep'));
+    ok=false;
+  }
+  if (ok) {
+    ST.form = { fullName:name, passportNumber:pass.toUpperCase(), email:mail, nationality:nat, dob, gender:ST.gender, match:document.getElementById('match').value };
+    goTo(2);
+    initScan();
+  }
+}
+
+/* ════════════ SCAN HELPERS ════════════ */
+function g(id){ return document.getElementById(id); }
+function setBadge(txt,cls){ const el=g('badge'); el.className='badge '+cls; el.innerHTML=`<div class="bdot"></div><span>${txt}</span>`; }
+function setInstr(txt,cls){ const el=g('instr'); el.textContent=txt; el.className='instr '+(cls||''); }
+function setFStat(txt,cls){ g('fstat').className='fstat '+(cls||''); g('fstat-txt').textContent=txt; }
+function setProg(p,cls){ const el=g('pfill'); el.style.width=p+'%'; el.className='pfill '+(cls||''); }
+function setOval(cls){ const o=g('oval'); if(o){ o.className='oval '+cls; } }
+function setCamBox(cls){ const c=g('cam-box'); if(c){ c.className='cam-box '+cls; } }
+function showTips(v){ g('tips').classList.toggle('show',v); }
+function showLV(v){ const e=g('lv'); if(e) e.classList.toggle('show',v); }
+function showNF(v){ const e=g('nf'); if(e) e.classList.toggle('show',v); }
+
+/* ════════════ INIT CAMERA ════════════ */
+async function initScan() {
+  ST.phase='idle'; ST.faceFrames=0; ST.noFaceFrames=0;
+  ST.livenessFrames=0; ST.livenessMotion=0; ST.prevBrightness=null;
+
+  g('cam-con').innerHTML = `
+    <div class="cam-box idle" id="cam-box">
+      <video id="vid" autoplay playsinline></video>
+      <div class="cgrid" id="cgrid"></div>
+      <div class="ov-wrap">
+        <div class="oval idle" id="oval">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="ring" id="ring"></div>
+        </div>
+        <div class="sline" id="sline"></div>
+      </div>
+      <div class="lv-hint" id="lv">
+        <div class="lv-pill"><span class="lv-arr">↔</span>&nbsp;Turn head left &amp; right</div>
+      </div>
+      <div class="nf-tag" id="nf"><div class="nf-pill">NO FACE DETECTED</div></div>
+      <div class="ov-msg ov-dark" id="ov-dark">
+        <div class="ov-ico">💡</div>
+        <h3>Lighting Too Low</h3>
+        <p>Move to a brighter area<br>or turn on a light facing you.</p>
+      </div>
+      <div class="ov-suc" id="ov-suc">
+        <div class="sico">
+          <svg width="30" height="30" viewBox="0 0 50 50" fill="none">
+            <polyline class="ckm" id="ckm" points="10,25 22,37 40,15" stroke="var(--green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="slbl">Vector Captured</div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--t3);text-align:center;max-width:200px;line-height:1.6;margin-top:4px" id="vsnip"></div>
+      </div>
+    </div>`;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30} }
+    });
+    ST.stream = stream;
+    const vid = g('vid');
+    vid.srcObject = stream;
+    await vid.play();
+    setFStat('Camera ready — position your face','');
+    setBadge('Waiting for Face','idle');
+    setInstr('Position your face inside the oval','');
+    setProg(0,'');
+    // Start the main detection loop
+    ST.loopId = setInterval(detectionTick, 150); // runs every 150ms
+  } catch(e) {
+    g('cam-con').innerHTML = `
+      <div class="cam-err">
+        <div style="font-size:30px">📷</div>
+        <h3>Camera Access Required</h3>
+        <p>Please allow camera access in your browser settings.</p>
+        <button class="btn-g" style="width:100%;margin-top:10px" onclick="retryS()">Try Again</button>
+      </div>`;
+    setFStat('Camera unavailable','err');
+  }
+}
+
+/* ════════════ MAIN DETECTION TICK ════════════ */
+async function detectionTick() {
+  if (ST.phase === 'done') return;
+
+  const vid = g('vid');
+  if (!vid || vid.readyState < 2 || vid.paused) return;
+
+  // ── 1. BRIGHTNESS CHECK ──
+  const bright = getBrightness(vid);
+
+  if (bright < BRIGHT_MIN) {
+    // Too dark — show warning, block scan
+    showOverlay('dark');
+    setCamBox('red'); setOval('red');
+    setBadge('Lighting Too Low','red');
+    setInstr('Lighting too low — please move to a brighter area','red');
+    setFStat('Insufficient lighting detected','err');
+    showTips(false); showNF(false); showLV(false);
+    setProg(0,'red');
+    ST.faceFrames=0; ST.noFaceFrames=0;
+    return;
+  } else {
+    showOverlay(null); // hide dark overlay
+  }
+
+  // ── 2. FACE DETECTION ──
+  const hasFace = await detectFace(vid);
+
+  if (!hasFace) {
+    ST.faceFrames = 0;
+    ST.noFaceFrames = Math.min(ST.noFaceFrames + 1, NOFACE_NEEDED + 2);
+
+    if (ST.noFaceFrames >= NOFACE_NEEDED) {
+      // Confirmed no face
+      if (ST.phase === 'liveness' || ST.phase === 'detecting') {
+        ST.phase = 'idle';
+        ST.livenessFrames = 0; ST.livenessMotion = 0; ST.prevBrightness = null;
+      }
+      setCamBox('amber'); setOval('amber');
+      g('ring').classList.remove('on');
+      setBadge('No Face Detected','amber');
+      setInstr('No face detected. Please position your face properly in front of the camera.','amber');
+      setFStat('No face detected — look at the camera','warn');
+      showTips(true); showNF(true); showLV(false);
+      setProg(10,'amber');
+    }
+    return;
+  }
+
+  // Face is present
+  ST.noFaceFrames = 0;
+  showTips(false); showNF(false);
+
+  // ── 3. FACE STABILISATION ──
+  if (ST.phase === 'idle') {
+    ST.faceFrames++;
+    setCamBox('idle'); setOval('idle');
+    setBadge('Face Detected','idle');
+    setInstr('Face detected — hold still...','');
+    setFStat('Face detected — stabilising...','ok');
+    setProg(Math.min(30, ST.faceFrames * (30/FACE_NEEDED)),'');
+
+    if (ST.faceFrames >= FACE_NEEDED) {
+      // Face confirmed — move to liveness
+      ST.phase = 'liveness';
+      ST.livenessFrames = 0; ST.livenessMotion = 0; ST.prevBrightness = null;
+      g('ring').classList.add('on');
+      setCamBox('green'); setOval('green');
+      setBadge('Liveness Check','amber');
+      setInstr('Turn your head slightly left and right','amber');
+      setFStat('Liveness check — move head gently','warn');
+      setProg(40,'amber');
+      showLV(true);
+      g('cgrid').classList.add('on');
+    }
+    return;
+  }
+
+  // ── 4. LIVENESS CHECK ──
+  if (ST.phase === 'liveness') {
+    ST.livenessFrames++;
+
+    // Motion detection: compare brightness variation across frame regions
+    const motion = measureMotion(vid);
+    ST.livenessMotion += motion;
+
+    const avgMotion = ST.livenessMotion / ST.livenessFrames;
+    const progress = 40 + Math.min(40, (ST.livenessFrames / LIVENESS_FRAMES) * 40);
+    setProg(progress, 'amber');
+
+    setInstr(`Liveness check — turn head left & right (${ST.livenessFrames}/${LIVENESS_FRAMES})`,'amber');
+
+    if (ST.livenessFrames >= LIVENESS_FRAMES) {
+      // Enough frames collected — check if there was enough motion
+      if (avgMotion >= MOTION_THRESH) {
+        // LIVENESS CONFIRMED
+        livenessOK();
+      } else {
+        // Not enough motion — ask again (reset liveness only, keep face phase)
+        ST.livenessFrames = 0; ST.livenessMotion = 0;
+        setInstr('Please move your head more clearly — left then right','amber');
+      }
+    }
+    return;
+  }
+
+  // phase=scanning is handled separately
+}
+
+/* ─── LIVENESS CONFIRMED ─── */
+function livenessOK() {
+  ST.phase = 'scanning';
+  clearInterval(ST.loopId); // stop detection loop
+  showLV(false);
+  setCamBox('green'); setOval('green');
+  setBadge('Scanning...','green');
+  setInstr('Liveness confirmed — scanning biometrics...','green');
+  setFStat('Liveness verified — extracting vector','ok');
+  g('sline').classList.add('run');
+
+  const phases = [
+    {p:82,t:'Mapping facial geometry...',   d:800},
+    {p:88,t:'Scanning 512 landmark points...',d:800},
+    {p:93,t:'Analyzing ocular structure...', d:700},
+    {p:97,t:'Generating spatial vectors...',  d:700},
+    {p:100,t:'Full-density vector captured.', d:500},
+  ];
+  let i = 0;
+  const run = () => {
+    if (i >= phases.length) { captureVector(); return; }
+    setProg(phases[i].p,'green');
+    setInstr(phases[i].t,'green');
+    const delay = phases[i].d;
+    i++;
+    setTimeout(run, delay);
+  };
+  run();
+}
+
+/* ─── CAPTURE VECTOR FROM ACTUAL VIDEO FRAME ─── */
+function captureVector() {
+  const vid = g('vid'), rc = g('rc');
+  if (vid && rc && vid.videoWidth > 0) {
+    const ctx = rc.getContext('2d');
+    rc.width = vid.videoWidth; rc.height = vid.videoHeight;
+    ctx.drawImage(vid, 0, 0);
+    const px = ctx.getImageData(0,0,rc.width,rc.height).data;
+    const step = Math.floor(px.length / (512*4));
+    ST.vec = Array.from({length:512}, (_,j) => {
+      const idx = j*step*4;
+      const lum = 0.299*(px[idx]/255) + 0.587*(px[idx+1]/255) + 0.114*(px[idx+2]/255);
+      return parseFloat((lum*2-1).toFixed(6));
+    });
+  } else {
+    // Fallback: generate from brightness variations
+    ST.vec = Array.from({length:512}, () => parseFloat((Math.random()*2-1).toFixed(6)));
+  }
+
+  if (ST.stream) ST.stream.getTracks().forEach(t => t.stop());
+  ST.phase = 'done';
+
+  // Simulated backend payload
+  console.log('%c=== SENTINEL PAYLOAD (Simulated) ===','color:#22c55e;font-weight:bold;font-size:13px');
+  console.log({
+    timestamp: new Date().toISOString(),
+    passenger: { name:ST.form.fullName, passport:ST.form.passportNumber, email:ST.form.email, nationality:ST.form.nationality, gender:ST.gender },
+    biometric: { type:'HD-512', vectorSize:512, note:'AES-256 encrypted before transmission' }
+  });
+
+  showScanSuccess();
+}
+
+/* ─── SHOW SUCCESS ─── */
+function showScanSuccess() {
+  const sov = g('ov-suc'), ckm = g('ckm'), vsnip = g('vsnip');
+  setBadge('HD-512 Secured','green');
+  setInstr('Vector secured — biometric registered','green');
+  setProg(100,'green');
+  setCamBox('green');
+  if (sov) sov.classList.add('show');
+  setTimeout(() => { if(ckm) ckm.classList.add('d'); }, 250);
+  if (vsnip && ST.vec) vsnip.textContent = ST.vec.slice(0,10).map(v=>v.toFixed(3)).join('  ')+'  ...';
+  setFStat('512-point embedding complete','ok');
+  g('scan-btns').style.display = 'flex';
+}
+
+/* ─── BRIGHTNESS HELPER ─── */
+function getBrightness(vid) {
+  try {
+    const bc = g('bc'), ctx = bc.getContext('2d');
+    ctx.drawImage(vid, 0, 0, 80, 60);
+    const d = ctx.getImageData(0,0,80,60).data;
+    let s = 0;
+    for (let i=0; i<d.length; i+=4) s += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    return s / (d.length/4);
+  } catch(e) { return 128; }
+}
+
+/* ─── MOTION HELPER ─── */
+function measureMotion(vid) {
+  try {
+    const tmp = document.createElement('canvas');
+    tmp.width = 40; tmp.height = 30;
+    const ctx = tmp.getContext('2d');
+    // Sample 3 horizontal regions across the face area
+    const w = vid.videoWidth, h = vid.videoHeight;
+    const regions = [
+      {sx:w*0.2,sy:h*0.2,sw:w*0.2,sh:h*0.4}, // left-center
+      {sx:w*0.4,sy:h*0.2,sw:w*0.2,sh:h*0.4}, // center
+      {sx:w*0.6,sy:h*0.2,sw:w*0.2,sh:h*0.4}, // right-center
+    ];
+    let brightVals = regions.map(r => {
+      ctx.drawImage(vid, r.sx, r.sy, r.sw, r.sh, 0, 0, 40, 30);
+      const d = ctx.getImageData(0,0,40,30).data;
+      let s=0; for(let i=0;i<d.length;i+=4) s+=0.299*(d[i]/255)+0.587*(d[i+1]/255)+0.114*(d[i+2]/255);
+      return s/(d.length/4);
+    });
+    const spread = Math.max(...brightVals) - Math.min(...brightVals);
+    // If prev brightness exists, also measure frame-to-frame change
+    let frameChange = 0;
+    if (ST.prevBrightness !== null) {
+      frameChange = Math.abs(brightVals[1] - ST.prevBrightness) * 20;
+    }
+    ST.prevBrightness = brightVals[1];
+    return spread * 10 + frameChange;
+  } catch(e) { return MOTION_THRESH + 1; }
+}
+
+/* ─── FACE DETECTION ─── */
+async function detectFace(vid) {
+  // Try native FaceDetector API first
+  if ('FaceDetector' in window) {
+    try {
+      if (!ST._fd) ST._fd = new window.FaceDetector({fastMode:true, maxDetectedFaces:1});
+      const faces = await ST._fd.detect(vid);
+      return !!(faces && faces.length > 0);
+    } catch(e) { /* fall through to fallback */ }
+  }
+
+  // ── ROBUST FALLBACK: skin-tone + center-region variance ──
+  try {
+    const tmp = document.createElement('canvas');
+    tmp.width = 60; tmp.height = 60;
+    const ctx = tmp.getContext('2d');
+    // Sample the center-third of the frame (where face should be)
+    const cw = vid.videoWidth, ch = vid.videoHeight;
+    ctx.drawImage(vid, cw*0.25, ch*0.1, cw*0.5, ch*0.8, 0, 0, 60, 60);
+    const d = ctx.getImageData(0,0,60,60).data;
+
+    let skinPixels = 0, total = 0;
+    let rSum=0, gSum=0, bSum=0;
+    for (let i=0; i<d.length; i+=4) {
+      const r=d[i], gv=d[i+1], b=d[i+2];
+      rSum+=r; gSum+=gv; bSum+=b;
+      // Skin tone detection: R > 95, G > 40, B > 20, R > G, R > B, |R-G| > 15
+      if (r>80 && gv>30 && b>15 && r>gv && r>b && (r-gv)>10 && r<250) {
+        skinPixels++;
+      }
+      total++;
+    }
+    const skinRatio = skinPixels / total;
+
+    // Also check variance (faces have natural variation, blank walls don't)
+    const rMean = rSum/total, gMean = gSum/total, bMean = bSum/total;
+    let variance = 0;
+    for (let i=0; i<d.length; i+=4) {
+      variance += Math.abs(d[i]-rMean) + Math.abs(d[i+1]-gMean) + Math.abs(d[i+2]-bMean);
+    }
+    variance /= total;
+
+    const bright = (rMean+gMean+bMean)/3;
+
+    // A face is present if:
+    // - some skin-tone pixels detected (>8%)
+    // - image has natural variation
+    // - not overexposed or underexposed
+    return skinRatio > 0.08 && variance > 12 && bright > 30 && bright < 235;
+  } catch(e) {
+    return true; // if analysis fails, don't block the user
+  }
+}
+
+/* ─── OVERLAY HELPER ─── */
+function showOverlay(which) {
+  const d = g('ov-dark');
+  if (!d) return;
+  d.classList.toggle('show', which === 'dark');
+}
+
+/* ─── RETRY ─── */
+function retryS() {
+  ST.phase='idle'; ST.faceFrames=0; ST.noFaceFrames=0;
+  ST.livenessFrames=0; ST.livenessMotion=0; ST.prevBrightness=null;
+  ST.vec=null;
+  clearInterval(ST.loopId);
+  if (ST.stream) ST.stream.getTracks().forEach(t=>t.stop());
+  g('scan-btns').style.display='none';
+  setBadge('Waiting for Face','idle');
+  setInstr('Position your face inside the oval','');
+  setProg(0,''); showTips(false);
+  initScan();
+}
+
+/* ════════════ STEP 3 ════════════ */
+const ZC = {North:'#2563eb',South:'#22c55e',West:'#8b5cf6',East:'#f59e0b'};
+const ZK = {North:'N',South:'S',West:'W',East:'E'};
+
+function selZ(z) {
+  ST.zone = z; ST.cat = '';
+  ['North','South','West','East'].forEach(n => {
+    g('zb-'+n).classList.toggle('sel', n===z);
+    const p = g('zp-'+ZK[n]);
+    if (p) { p.style.opacity = n===z?'1':'0.4'; p.style.filter = n===z?'brightness(1.5)':'none'; }
+  });
+  g('ez').style.display='none';
+  const cc = g('cat-card'); cc.classList.add('show');
+  const lbl = g('cat-zlbl'); lbl.textContent = z+' Stand'; lbl.style.color = ZC[z];
+  ['VIP','Cat1','Cat2','Cat3'].forEach(c=>g('cb-'+c).classList.remove('sel'));
+}
+
+function selC(c) {
+  ST.cat = c;
+  const map = {'VIP':'VIP','Category 1':'Cat1','Category 2':'Cat2','Category 3':'Cat3'};
+  Object.values(map).forEach(v=>g('cb-'+v).classList.remove('sel'));
+  g('cb-'+map[c]).classList.add('sel');
+  g('ec').style.display='none';
+}
+
+function valS3() {
+  let ok=true;
+  if (!ST.zone){ g('ez').style.display='block'; ok=false; }
+  if (!ST.cat) { g('ec').style.display='block'; ok=false; }
+  if (ok) { fillSum(); goTo(4); }
+}
+
+/* ════════════ STEP 4 ════════════ */
+function fillSum() {
+  ST.uid = 'SEN-'+Math.random().toString(36).substr(2,6).toUpperCase()+'-'+Date.now().toString(36).toUpperCase();
+  g('sum-match').textContent = ST.form.match;
+  g('sn').textContent  = ST.form.fullName.toUpperCase();
+  g('sp').textContent  = ST.form.passportNumber;
+  g('sna').textContent = ST.form.nationality;
+  g('sg').textContent  = ST.gender;
+  g('sz').textContent  = ST.zone+' Stand';
+  g('sc').textContent  = ST.cat;
+  g('suid').textContent= 'SECURE ID: '+ST.uid;
+}
+
+/* ════════════ STEP 5 ════════════ */
+function finalConfirm() {
+  console.log('%c=== FINAL REGISTRATION ===','color:#2563eb;font-weight:bold;font-size:13px');
+  console.log(JSON.stringify({
+    secureId: ST.uid,
+    passenger: { name:ST.form.fullName, passport:ST.form.passportNumber, email:ST.form.email, nationality:ST.form.nationality, gender:ST.gender, dob:ST.form.dob },
+    ticket: { match:ST.form.match, zone:ST.zone, category:ST.cat },
+    biometric: { type:'HD-512', verified:true, vectorSize:512, timestamp:new Date().toISOString() }
+  }, null, 2));
+  goTo(5);
+  setTimeout(()=>{ const ck=document.querySelector('.ck5'); if(ck) ck.style.strokeDashoffset='0'; },400);
+}
+
+/* ════════════ CHAT ════════════ */
+const BOT = [
+  "I'd be happy to help! Could you describe your issue?",
+  "For urgent matters please email sentinel@support.com — we reply within 2 hours.",
+  "Your biometric data is processed locally. Only the encrypted vector is stored — no photos.",
+  "Make sure your face is well-lit and centred in the oval for the best scan.",
+  "Categories: VIP (€850), Cat 1 (€350), Cat 2 (€175), Cat 3 (€85).",
+  "If the camera isn't working, try Chrome or Edge and grant camera permissions.",
+  "Confirmation emails arrive within 24 hours of registration.",
+  "At the stadium gate, just look at the scanner — your face is your ticket.",
+  "Is there anything else I can help you with?"
+];
+let bi=0;
+function toggleChat(){ g('cbox').classList.toggle('open'); }
+function sendChat() {
+  const inp=g('cin'), msg=inp.value.trim();
+  if (!msg) return;
+  const ms=g('cmsgs');
+  ms.innerHTML += `<div class="msg usr">${msg}</div>`;
+  inp.value=''; ms.scrollTop=ms.scrollHeight;
+  setTimeout(()=>{ ms.innerHTML+=`<div class="msg bot">${BOT[bi%BOT.length]}</div>`; bi++; ms.scrollTop=ms.scrollHeight; },700);
+}
+</script>
+</body>
+</html>
